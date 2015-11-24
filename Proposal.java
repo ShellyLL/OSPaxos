@@ -7,7 +7,6 @@ public class Proposal
 {
 	private int csn;  //the serial number
 	private String value;
-	private int NodeID;
 	
 	public Proposal(int csn, String value)
 	{
@@ -15,7 +14,7 @@ public class Proposal
 		this.value = value;
 	}
 
-	public int getPsn()
+	public int getCsn()
 	{
 		return csn;
 	}
@@ -25,9 +24,6 @@ public class Proposal
 		return value;
 	}
 	
-	public int getNodeID(){
-		return NodeID;
-	}
 	public String toString()
 	{
 		return "{" + csn + ", " + value + "}";
