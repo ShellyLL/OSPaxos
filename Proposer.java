@@ -1,10 +1,10 @@
-package OXPaxos;
+package OSPaxos;
 
 public interface Proposer {
 
-	//public void setProposal(String value);
-	public void sendPrepareRerquest(int psn, String newValue);
-	//public void receivePromise(int fromNodeID, int curPsn, int prevPsn, String prevAcceptedValue);
-	public void sendAcceptRequest(int psn, String decidedValue);  // to everyone
+	public void sendPrepareRequest();
 
+	public void receivePromise(PromiseMessage m);
+	
+	public void receiveDecision(DecisionMessage m);
 }

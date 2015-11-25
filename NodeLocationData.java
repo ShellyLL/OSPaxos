@@ -1,40 +1,32 @@
-package OXPaxos;
+package OSPaxos;
 
-
-public class NodeLocationData 
-{
+public class NodeLocationData {
 
 	private int NodeID;
 	private boolean isLeader;
-	
-	public NodeLocationData(int num)
-	{
+
+	public NodeLocationData(int num) {
 		this.NodeID = num;
 		this.isLeader = false;
 	}
-	
-	public void becomeLeader()
-	{
+
+	public void becomeLeader() {
 		isLeader = true;
 	}
-	
-	public void becomeNonLeader()
-	{
+
+	public void becomeNonLeader() {
 		isLeader = false;
 	}
-	
-	public boolean isLeader()
-	{
+
+	public boolean isLeader() {
 		return isLeader;
 	}
-	
-	public int getNodeID()
-	{
+
+	public int getNodeID() {
 		return NodeID;
 	}
-	
-	public String toString()
-	{
-		return ((Integer)NodeID).toString();
+
+	public String toString() {
+		return ((Integer) NodeID).toString();
 	}
 }

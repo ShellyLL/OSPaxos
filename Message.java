@@ -1,10 +1,14 @@
-package OXPaxos;
-
+package OSPaxos;
 
 public class Message {
-	protected NodeLocationData sender;
-	protected NodeLocationData receiver;
-
+	private NodeLocationData sender;
+	private NodeLocationData receiver;
+	
+	public Message(NodeLocationData sender, NodeLocationData receiver){
+		this.sender = sender;
+		this.receiver = receiver;
+	}
+	
 	public NodeLocationData getSender() {
 		return sender;
 	}
@@ -13,7 +17,7 @@ public class Message {
 		this.sender = sender;
 	}
 
-	public NodeLocationData getReciever() {
+	public NodeLocationData getReceiver() {
 		return receiver;
 	}
 

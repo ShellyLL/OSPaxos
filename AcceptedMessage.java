@@ -1,9 +1,9 @@
 package OSPaxos;
 
-public class AcceptRequestMessage extends Message {
+public class AcceptedMessage extends Message {
 	private Proposal proposal;
 
-	public AcceptRequestMessage(NodeLocationData sender, NodeLocationData receiver, Proposal proposal) {
+	public AcceptedMessage(NodeLocationData sender, NodeLocationData receiver, Proposal proposal) {
 		super(sender, receiver);
 		this.proposal = proposal;
 	}

@@ -1,4 +1,4 @@
-package OXPaxos;
+package OSPaxos;
 
 import java.io.*;
 import java.util.ArrayList;

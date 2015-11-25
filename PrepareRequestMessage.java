@@ -1,18 +1,16 @@
-package OXPaxos;
+package OSPaxos;
 
-//send only the csn to the acceptors, if the csn is greater than the csn they promised, then the acceptor sends response
-public class PrepareRequestMessage extends Message
-{
-	private int csn;
-	
-	public PrepareRequestMessage(int csn)
-	{
-		this.csn = csn;
+public class PrepareRequestMessage extends Message {
+	private int sn;
+
+	public PrepareRequestMessage(NodeLocationData sender,
+			NodeLocationData receiver, int sn) {
+		super(sender, receiver);
+		this.sn = sn;
 	}
-	
-	public int getCsn()
-	{
-		return csn;
+
+	public int getSn() {
+		return sn;
 	}
-	
+
 }
