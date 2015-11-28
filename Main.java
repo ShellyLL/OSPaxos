@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-
+//test
 public class Main {
 	private static HashSet<Node> nodes;
 	private static HashSet<NodeLocationData> nodeLocations;
