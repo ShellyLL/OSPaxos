@@ -39,7 +39,7 @@ public class Node implements Proposer, Acceptor, Learner {
 	// private Map<Integer, Integer> numAcceptNotifications;
 	// private Map<Integer, String> chosenValues;
 
-	// by Hanzi: add String value to deal with write
+	// by Hanzi: added String value to deal with write
 	public Node(int NodeID) {
 		this.nodeLocationSet = new HashSet<NodeLocationData>();
 		this.nodeLocationMap = new HashMap<NodeLocationData, Node>();
