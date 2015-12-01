@@ -35,11 +35,6 @@ public class Proposal implements Comparable<Proposal>{
 	@Override
 	public int compareTo(Proposal o) {
 		// TODO Auto-generated method stub
-		if (this.sn < o.sn){
-			return 1;
-		} else if (this.sn > o.sn){
-			return -1;
-		}
-		return 0;
+		return o.sn - this.sn;
 	}
 }

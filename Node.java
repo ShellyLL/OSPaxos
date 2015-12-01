@@ -8,11 +8,13 @@ import java.util.Set;
 
 public class Node implements Proposer, Acceptor, Learner {
 
-   // by Hanzi, I changed the variable name nodes to nodeLocationSet in order to
-   // keep consistent with Main
+	// by Hanzi, I changed the variable name nodes to nodeLocationSet in order
+	// to
+	// keep consistent with Main
 	// Node Data
-	private Set<NodeLocationData> nodeLocationSet; // store the NodeLocation of all the
-											// nodes in the group
+	private Set<NodeLocationData> nodeLocationSet; // store the NodeLocation of
+													// all the
+	// nodes in the group
 	private Map<NodeLocationData, Node> nodeLocationMap;
 	private NodeLocationData locationData; // unique locationData to identify
 											// itself
@@ -23,7 +25,7 @@ public class Node implements Proposer, Acceptor, Learner {
 	// Proposer Variables
 	private PriorityQueue<Proposal> promises;
 	private boolean done = false;
-	//private String value = null; // for write only
+	private String value; // for write only
 	// private Map<Integer, Integer> numAcceptRequests; // to keep track of
 	// number of promises received
 	// private Map<Integer, Proposal> proposals;
@@ -49,27 +51,27 @@ public class Node implements Proposer, Acceptor, Learner {
 		// proposer variables
 		// this.NodeID = NodeID;
 		this.currentSn = -1;
-		
-	    // this.numAcceptRequests = new HashMap<Integer, Integer>();
-      // this.proposals = new HashMap<Integer, Proposal>();
 
-      // acceptor
-      // this.maxAcceptedProposals = new HashMap<Integer, Proposal>();
-      this.acceptedProposal = new Proposal(-1, null);// -1 refers to no
-                                          // proposal has been
-                                          // received
-      // learner
-      // this.numAcceptNotifications = new HashMap<Integer, Integer>();
-      // this.chosenValues = new HashMap<Integer, String>();
-      learnedProposals = new HashMap<Proposal, Integer>();
+		// this.numAcceptRequests = new HashMap<Integer, Integer>();
+		// this.proposals = new HashMap<Integer, Proposal>();
+
+		// acceptor
+		// this.maxAcceptedProposals = new HashMap<Integer, Proposal>();
+		this.acceptedProposal = new Proposal(-1, null);// -1 refers to no proposal accepted
 		
-		// by Hanzi: I put the following initialization in sendPrepareRequest() when debugging
+		// learner
+		// this.numAcceptNotifications = new HashMap<Integer, Integer>();
+		// this.chosenValues = new HashMap<Integer, String>();
+		learnedProposals = new HashMap<Proposal, Integer>();
+
+		// by Hanzi: I put the following initialization in sendPrepareRequest()
+		// when debugging
 		// because when we do not know the nodes.size() until we finish creating
-		// all nodes. Otherwise, there will be illegal argument exception		
+		// all nodes. Otherwise, there will be illegal argument exception
 		// this.promises = new PriorityQueue<Proposal>(nodes.size());
-	
+
 	}
- 
+
 	public boolean isLeader() {
 		return locationData.isLeader();
 	}
@@ -77,11 +79,12 @@ public class Node implements Proposer, Acceptor, Learner {
 	public void becomeLeader() {
 		writeDebug("I'm Leader");
 		locationData.becomeLeader();
-		
+
 		for (NodeLocationData node : nodeLocationSet) {
-			if(node == locationData) continue; // added by Hanzi
+			if (node == locationData)
+				continue; // added by Hanzi
 			node.becomeNonLeader();
-		}	
+		}
 	}
 
 	public void setNodeList(Set<NodeLocationData> s) {
@@ -89,13 +92,13 @@ public class Node implements Proposer, Acceptor, Learner {
 	}
 
 	public void setMessenger(Map<NodeLocationData, Node> map) {
-	   this.messenger = new Messenger(map);
+		this.messenger = new Messenger(map);
 	}
-	
+
 	public void setAcceptedProposal(String s) {
-	   this.acceptedProposal.setValue(s);
+		this.acceptedProposal.setValue(s);
 	}
-	  
+
 	public NodeLocationData getLocationData() {
 		return locationData;
 	}
@@ -144,25 +147,25 @@ public class Node implements Proposer, Acceptor, Learner {
 	 * 
 	 * //update storage highestCsn = receivedCsn; }
 	 * 
-	 * }
-	 * }
+	 * } }
 	 */
+
 	// message dispatcher
 	public void receive(Message m) {
 		if (m instanceof PrepareRequestMessage) {
-		   writeDebug("Received Prepare Request from " + m.getSender());
+			writeDebug("Received Prepare Request from " + m.getSender());
 			PrepareRequestMessage prepareRequest = (PrepareRequestMessage) m;
 			receivePrepareRequest(prepareRequest);
 		} else if (m instanceof PromiseMessage) {
-		   writeDebug("Received Promise from " + m.getSender());
+			writeDebug("Received Promise from " + m.getSender());
 			PromiseMessage promise = (PromiseMessage) m;
 			receivePromise(promise);
 		} else if (m instanceof AcceptRequestMessage) {
-		   writeDebug("Received Accept Request from " + m.getSender());
+			writeDebug("Received Accept Request from " + m.getSender());
 			AcceptRequestMessage acceptRequest = (AcceptRequestMessage) m;
 			receiveAcceptRequest(acceptRequest);
 		} else if (m instanceof AcceptedMessage) {
-		   writeDebug("Accepted from " + m.getSender());
+			writeDebug("Accepted from " + m.getSender());
 			AcceptedMessage accepted = (AcceptedMessage) m;
 			receiveAccepted(accepted);
 		} else if (m instanceof DecisionMessage) {
@@ -173,15 +176,15 @@ public class Node implements Proposer, Acceptor, Learner {
 
 	// Proposer methods
 	@Override
-	public void sendPrepareRequest() {
-		// TODO Auto-generated method stub
-	   // The following two lines are changed by Hanzi when debugging
-	   this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
-		//promises.clear();
+	public void sendPrepareRequest(String v) {
+		// The following two lines are changed by Hanzi when debugging
+		this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
+		// promises.clear();
+		this.value = v;
 		done = false;
 		for (NodeLocationData node : nodeLocationSet) {
 			writeDebug("Send Prepare Request to " + node);
-		   Message prepareRequest = new PrepareRequestMessage(locationData,
+			Message prepareRequest = new PrepareRequestMessage(locationData,
 					node, ++currentSn);
 			messenger.send(prepareRequest);
 		}
@@ -189,19 +192,25 @@ public class Node implements Proposer, Acceptor, Learner {
 
 	@Override
 	public void receivePromise(PromiseMessage m) {
-		// TODO Auto-generated method stub
 		int sn = m.getSn();
 		if (sn == currentSn) {
 			promises.add(m.getPrevProposal());
 		}
-		if (promises.size() + 1 > nodeLocationSet.size() / 2) {// plus proposer itself
-			promises.add(acceptedProposal);
-			Proposal p = promises.poll();
-			p.setSn(sn);
+		if (promises.size() + 1 > nodeLocationSet.size() / 2) {// plus proposer
+																// itself
+			Proposal cur;// Proposal for this round
+			if (value != null) {
+				cur = new Proposal(sn, value);
+			} else {
+				promises.add(acceptedProposal);
+				Proposal pre = promises.poll();// get the previously accepted
+												// proposal with the highest sn
+				cur = new Proposal(sn, pre.getValue());
+			}
 			for (NodeLocationData node : nodeLocationSet) {
-			   //writeDebug("Send Accept! Request to " + node);
+				// writeDebug("Send Accept! Request to " + node);
 				AcceptRequestMessage acceptRequest = new AcceptRequestMessage(
-						locationData, node, p);
+						locationData, node, cur);
 				messenger.send(acceptRequest);
 			}
 		}
@@ -209,8 +218,9 @@ public class Node implements Proposer, Acceptor, Learner {
 
 	@Override
 	public void receiveDecision(DecisionMessage m) {
-		if (m.getProposal().getSn() == currentSn && done == false){
-			writeDebug("Value " + m.getProposal().getValue() + " is returned to client");
+		if (m.getProposal().getSn() == currentSn && done == false) {
+			writeDebug("Value " + m.getProposal().getValue()
+					+ " is returned to client");
 			done = true;
 		}
 	}
@@ -218,7 +228,6 @@ public class Node implements Proposer, Acceptor, Learner {
 	// Acceptor methods
 	@Override
 	public void receivePrepareRequest(PrepareRequestMessage m) {
-		// TODO Auto-generated method stub
 		int sn = m.getSn();
 		if (sn > currentSn) {
 			currentSn = sn;
@@ -230,14 +239,13 @@ public class Node implements Proposer, Acceptor, Learner {
 
 	@Override
 	public void receiveAcceptRequest(AcceptRequestMessage m) {
-		// TODO Auto-generated method stub
 		Proposal p = m.getProposal();
 		int sn = p.getSn();
 		if (sn >= currentSn) {
 			this.currentSn = sn;
 			this.acceptedProposal = p;
 			for (NodeLocationData node : nodeLocationSet) {
-			   //writeDebug("Send Accepted to" + node);
+				// writeDebug("Send Accepted to" + node);
 				AcceptedMessage accepted = new AcceptedMessage(locationData,
 						node, acceptedProposal);
 				messenger.send(accepted);
@@ -248,7 +256,6 @@ public class Node implements Proposer, Acceptor, Learner {
 	// Learner methods
 	@Override
 	public void receiveAccepted(AcceptedMessage m) {
-		// TODO Auto-generated method stub
 		Proposal p = m.getProposal();
 		Integer times = learnedProposals.get(p);
 		learnedProposals.put(p, times == null ? 1 : times + 1);
@@ -261,16 +268,15 @@ public class Node implements Proposer, Acceptor, Learner {
 		}
 		// send the decided value to leader
 		if (learnedProposals.get(p) > nodeLocationSet.size() / 2) {
-			//writeDebug("send the decided value to leader " + leader);
-		   Message decision = new DecisionMessage(locationData, leader, p);
+			// writeDebug("send the decided value to leader " + leader);
+			Message decision = new DecisionMessage(locationData, leader, p);
 			messenger.send(decision);
 		}
 	}
 
-	  private void writeDebug(String s) {
-	      System.out.print(locationData + ": ");
-	      System.out.println(s);
-	   }
-	
-	  
+	private void writeDebug(String s) {
+		System.out.print(locationData + ": ");
+		System.out.println(s);
+	}
+
 }

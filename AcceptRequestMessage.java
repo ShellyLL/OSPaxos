@@ -11,4 +11,5 @@ public class AcceptRequestMessage extends Message {
 	public Proposal getProposal() {
 		return proposal;
 	}
+	
 }
