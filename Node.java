@@ -19,27 +19,19 @@ public class Node implements Proposer, Acceptor, Learner {
 	private NodeLocationData locationData; // unique locationData to identify
 											// itself
 	private Messenger messenger;
-	// private int NodeID; //the NodeID
 	private int currentSn; // to keep track of sn used so far
 
 	// Proposer Variables
 	private PriorityQueue<Proposal> promises;
-	private boolean done = false;
+	private boolean done;
 	private String value; // for write only
-	// private Map<Integer, Integer> numAcceptRequests; // to keep track of
-	// number of promises received
-	// private Map<Integer, Proposal> proposals;
-
+	
 	// Acceptor Variables
 	private Proposal acceptedProposal;
-	// private Map<Integer, Proposal> maxAcceptedProposals;
 
 	// Learner Variables
 	private Map<Proposal, Integer> learnedProposals;// key:proposal, value:
 													// times learned
-
-	// private Map<Integer, Integer> numAcceptNotifications;
-	// private Map<Integer, String> chosenValues;
 
 	// by Hanzi: added String value to deal with write
 	public Node(int NodeID) {
@@ -47,21 +39,16 @@ public class Node implements Proposer, Acceptor, Learner {
 		this.nodeLocationMap = new HashMap<NodeLocationData, Node>();
 		this.locationData = new NodeLocationData(NodeID);
 		this.messenger = new Messenger(nodeLocationMap);
-
-		// proposer variables
-		// this.NodeID = NodeID;
 		this.currentSn = -1;
-
-		// this.numAcceptRequests = new HashMap<Integer, Integer>();
-		// this.proposals = new HashMap<Integer, Proposal>();
+		
+		// proposer
+		this.promises = null;
+		this.done = false;
 
 		// acceptor
-		// this.maxAcceptedProposals = new HashMap<Integer, Proposal>();
 		this.acceptedProposal = new Proposal(-1, null);// -1 refers to no proposal accepted
 		
 		// learner
-		// this.numAcceptNotifications = new HashMap<Integer, Integer>();
-		// this.chosenValues = new HashMap<Integer, String>();
 		learnedProposals = new HashMap<Proposal, Integer>();
 
 		// by Hanzi: I put the following initialization in sendPrepareRequest()
@@ -103,69 +90,19 @@ public class Node implements Proposer, Acceptor, Learner {
 		return locationData;
 	}
 
-	/*
-	 * public void propose(String value, HashSet<Node> nodeSet) { propose(value,
-	 * currentCsn++, nodeSet); //the leader proposes and broadcast message to
-	 * all the nodes in the NodeLocation data HashSet }
-	 * 
-	 * public void propose(String value, int csn, HashSet<Node> nodeSet) {
-	 * numAcceptRequests.put(csn, 0); Proposal proposal = new Proposal(csn,
-	 * value); // DO I need to Change this part and add NodeID?, the m.sender is
-	 * the information proposals.put(csn, proposal); broadcast(new
-	 * PrepareRequestMessage(csn), nodeSet); }
-	 * 
-	 * private void broadcast(Message m, HashSet<Node> nodeSet) {
-	 * m.setSender(locationData); for(NodeLocationData node : nodes) { //
-	 * immediately deliver to self m.setReceiver(node); deliver(m,nodeSet);
-	 * 
-	 * } }
-	 * 
-	 * private void unicast(NodeLocationData node, Message m) { //From my
-	 * understanding, this code deals with electing new leader }
-	 * 
-	 * 
-	 * //NodeLocationData is the receiver of this promise private void
-	 * SendPromiseToLeader(PrepareResponseMessage m){ NodeLocationData receiver
-	 * = m.getReciever();
-	 * 
-	 * } private void deliver(Message m, HashSet<Node> nodeSet) { if (m
-	 * instanceof PrepareRequestMessage) //Acceptor needs to deal with it {
-	 * PrepareRequestMessage prepareRequest = (PrepareRequestMessage)m; int
-	 * receivedCsn = prepareRequest.getCsn(); //update currentCsn if necessary
-	 * if(currentCsn <= receivedCsn) currentCsn = receivedCsn + 1;
-	 * 
-	 * if (receivedCsn <= highestCsn ){ return; //if the receivedCsn less than
-	 * the highestCsn, ignore } else{ writeDebug("Got Prepare Request from " +
-	 * prepareRequest.getSender() + ": (" + receivedCsn + ")");
-	 * 
-	 * 
-	 * // respond PrepareResponseMessage prepareResponse = new
-	 * PrepareResponseMessage(receivedCsn, highestCsn, value);
-	 * prepareResponse.setSender(locationData);
-	 * prepareResponse.setReceiver(prepareRequest.getSender());
-	 * SendPromiseToLeader(prepareResponse);
-	 * 
-	 * //update storage highestCsn = receivedCsn; }
-	 * 
-	 * } }
-	 */
-
+	
 	// message dispatcher
 	public void receive(Message m) {
 		if (m instanceof PrepareRequestMessage) {
-			writeDebug("Received Prepare Request from " + m.getSender());
 			PrepareRequestMessage prepareRequest = (PrepareRequestMessage) m;
 			receivePrepareRequest(prepareRequest);
 		} else if (m instanceof PromiseMessage) {
-			writeDebug("Received Promise from " + m.getSender());
 			PromiseMessage promise = (PromiseMessage) m;
 			receivePromise(promise);
 		} else if (m instanceof AcceptRequestMessage) {
-			writeDebug("Received Accept Request from " + m.getSender());
 			AcceptRequestMessage acceptRequest = (AcceptRequestMessage) m;
 			receiveAcceptRequest(acceptRequest);
 		} else if (m instanceof AcceptedMessage) {
-			writeDebug("Accepted from " + m.getSender());
 			AcceptedMessage accepted = (AcceptedMessage) m;
 			receiveAccepted(accepted);
 		} else if (m instanceof DecisionMessage) {
@@ -179,19 +116,20 @@ public class Node implements Proposer, Acceptor, Learner {
 	public void sendPrepareRequest(String v) {
 		// The following two lines are changed by Hanzi when debugging
 		this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
-		// promises.clear();
 		this.value = v;
 		done = false;
+		currentSn++;
 		for (NodeLocationData node : nodeLocationSet) {
-			writeDebug("Send Prepare Request to " + node);
+			writeDebug("Send Prepare Request to " + node + ": (" + currentSn + ")");
 			Message prepareRequest = new PrepareRequestMessage(locationData,
-					node, ++currentSn);
+					node, currentSn);
 			messenger.send(prepareRequest);
 		}
 	}
 
 	@Override
 	public void receivePromise(PromiseMessage m) {
+		writeDebug("Received Promise from " + m.getSender() + ": (" + m.getSn() + " ," + m.getPrevProposal() + ")");
 		int sn = m.getSn();
 		if (sn == currentSn) {
 			promises.add(m.getPrevProposal());
@@ -208,7 +146,7 @@ public class Node implements Proposer, Acceptor, Learner {
 				cur = new Proposal(sn, pre.getValue());
 			}
 			for (NodeLocationData node : nodeLocationSet) {
-				// writeDebug("Send Accept! Request to " + node);
+				writeDebug("Send Accept! Request to " + node + ": " + cur);
 				AcceptRequestMessage acceptRequest = new AcceptRequestMessage(
 						locationData, node, cur);
 				messenger.send(acceptRequest);
@@ -228,6 +166,7 @@ public class Node implements Proposer, Acceptor, Learner {
 	// Acceptor methods
 	@Override
 	public void receivePrepareRequest(PrepareRequestMessage m) {
+		writeDebug("Received Prepare Request from " + m.getSender() + ": (" + m.getSn() + ")");
 		int sn = m.getSn();
 		if (sn > currentSn) {
 			currentSn = sn;
@@ -239,6 +178,7 @@ public class Node implements Proposer, Acceptor, Learner {
 
 	@Override
 	public void receiveAcceptRequest(AcceptRequestMessage m) {
+		writeDebug("Received Accept Request from " + m.getSender() + ": " + m.getProposal());
 		Proposal p = m.getProposal();
 		int sn = p.getSn();
 		if (sn >= currentSn) {
@@ -256,6 +196,7 @@ public class Node implements Proposer, Acceptor, Learner {
 	// Learner methods
 	@Override
 	public void receiveAccepted(AcceptedMessage m) {
+		writeDebug("Accepted from " + m.getSender() + ": " + m.getProposal());
 		Proposal p = m.getProposal();
 		Integer times = learnedProposals.get(p);
 		learnedProposals.put(p, times == null ? 1 : times + 1);
@@ -268,15 +209,14 @@ public class Node implements Proposer, Acceptor, Learner {
 		}
 		// send the decided value to leader
 		if (learnedProposals.get(p) > nodeLocationSet.size() / 2) {
-			// writeDebug("send the decided value to leader " + leader);
+			//writeDebug("Send the decided value to leader " + leader);
 			Message decision = new DecisionMessage(locationData, leader, p);
 			messenger.send(decision);
 		}
 	}
 
 	private void writeDebug(String s) {
-		System.out.print(locationData + ": ");
-		System.out.println(s);
+		System.out.println(locationData + ": " + s);
 	}
 
 }

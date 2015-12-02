@@ -72,14 +72,12 @@ public class Main {
 		writeDebug(n + " nodes created");
 	}
 
-	// by Hanzi: I rewrite methods write and read to take into account the
-	// proposal's value s.
-	// s does not participate in voting
+	
 	private static void read(Set<Node> nodes) {
 		writeDebug("Proposing for reading: ");
 		for (Node node : nodes) {
 			if (node.isLeader()) {
-				node.sendPrepareRequest(null);//if read, just put null for value
+				node.sendPrepareRequest(null);//if read, just pass null for value
 				break;
 			}
 		}
