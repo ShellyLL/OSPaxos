@@ -9,7 +9,7 @@ public class Main2 {
 
    private static Set<Node2> nodes;
    private static Set<NodeLocationData> nodeLocationSet;
-   private static Map<NodeLocationData, Node2> nodeLocationMap;
+   private static Map<NodeLocationData, Node> nodeLocationMap;
    private static Queue<Node2> failedLeaders;
    private static Queue<Node2> failedVoters;
    private static final long failTime = 5;
@@ -19,7 +19,7 @@ public class Main2 {
       failedLeaders = new LinkedList<Node2>();
       failedVoters = new LinkedList<Node2>();
       nodeLocationSet = new HashSet<NodeLocationData>();
-      nodeLocationMap = new HashMap<NodeLocationData, Node2>();
+      nodeLocationMap = new HashMap<NodeLocationData, Node>();
       System.out.println("Type 'help' for a list of commands");
       BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
       while (true) {

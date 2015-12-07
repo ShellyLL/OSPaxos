@@ -1,36 +1,20 @@
 package OSPaxos;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
+import java.util.*;
 
-public class Node implements Proposer, Acceptor, Learner {
-	
-	private Set<NodeLocationData> nodeLocationSet; // store the NodeLocation of
+public abstract class Node implements Proposer, Acceptor, Learner {
+
+	protected Set<NodeLocationData> nodeLocationSet; // store the NodeLocation
+														// of
 	// all the nodes in the group
-	private Map<NodeLocationData, Node> nodeLocationMap;
-	private NodeLocationData locationData; // unique locationData to identify
+	protected Map<NodeLocationData, Node> nodeLocationMap;
+	protected NodeLocationData locationData; // unique locationData to identify
 	// itself
-	private Messenger messenger;
-	private int currentSn; // to keep track of sn used so far
-
-	// Proposer Variables
-	private PriorityQueue<Proposal> promises; // sorted by sn in descending order
-	private int phase; // indicate which phase of current round [0,1,2]
-	private String value; // for write only
-
-	// Acceptor Variables
-	private Proposal acceptedProposal;
-
-	// Learner Variables
-	private Map<Proposal, Integer> learnedProposals;// key:proposal, value:
-	// times learned
+	protected Messenger messenger;
+	protected int currentSn; // to keep track of sn used so far
 
 	// state failure variable
-	private ArrayList<Boolean> isRunning;
+	protected ArrayList<Boolean> isRunning;
 
 	public Node(int NodeID) {
 		this.nodeLocationSet = new HashSet<NodeLocationData>();
@@ -38,16 +22,6 @@ public class Node implements Proposer, Acceptor, Learner {
 		this.locationData = new NodeLocationData(NodeID);
 		this.messenger = new Messenger(nodeLocationMap);
 		this.currentSn = -1;
-
-		// proposer
-		this.promises = null;
-
-		// acceptor
-		this.acceptedProposal = new Proposal(-1, null);// -1 refers to no
-														// proposal accepted
-
-		// learner
-		learnedProposals = new HashMap<Proposal, Integer>();
 
 		// state failure, why it is 1 to 5
 		this.isRunning = new ArrayList<>();
@@ -79,9 +53,10 @@ public class Node implements Proposer, Acceptor, Learner {
 		this.messenger = new Messenger(map);
 	}
 
-	public void setAcceptedProposal(String s) {
-		this.acceptedProposal.setValue(s);
-	}
+	/*
+	 * public void setAcceptedProposal(String s) {
+	 * this.acceptedProposal.setValue(s); }
+	 */
 
 	public NodeLocationData getLocationData() {
 		return locationData;
@@ -113,15 +88,15 @@ public class Node implements Proposer, Acceptor, Learner {
 	}
 
 	// message dispatcher
-	public void receive(Message m) {
+	public synchronized void receive(Message m) {
 		if (m instanceof PrepareRequestMessage && this.getIsRunning().get(0)) {
 			PrepareRequestMessage prepareRequest = (PrepareRequestMessage) m;
-			receivePrepareRequest(prepareRequest); //I think this is leader/proposer fail
-			                                       //because it is leader's responsibility to send prepare request
+			receivePrepareRequest(prepareRequest);
 		} else if (m instanceof PromiseMessage && this.getIsRunning().get(1)) {
 			PromiseMessage promise = (PromiseMessage) m;
 			receivePromise(promise);
-		} else if (m instanceof AcceptRequestMessage && this.getIsRunning().get(2)) {
+		} else if (m instanceof AcceptRequestMessage
+				&& this.getIsRunning().get(2)) {
 			AcceptRequestMessage acceptRequest = (AcceptRequestMessage) m;
 			receiveAcceptRequest(acceptRequest);
 		} else if (m instanceof AcceptedMessage && this.getIsRunning().get(3)) {
@@ -130,132 +105,16 @@ public class Node implements Proposer, Acceptor, Learner {
 		}
 	}
 
-	// Proposer methods
-	@Override
-	public void sendPrepareRequest(String v) {
-		// The following two lines are changed by Hanzi when debugging
-		this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
-		this.value = v;
-		this.phase = 0;
-		this.currentSn++;
-		for (NodeLocationData node : nodeLocationSet) {
-			if (node == this.locationData)
-				continue;
-			writeDebug("Send Prepare Request to " + node + ": (" + currentSn + ")");
-			Message prepareRequest = new PrepareRequestMessage(locationData,
-					node, currentSn);
-			this.messenger.send(prepareRequest);
-		}
-	}
-
-	@Override
-	public void receivePromise(PromiseMessage m) {
-		writeDebug("Received Promise from " + m.getSender() + ": (" + m.getSn()
-				+ ", " + m.getPrevProposal() + ")");
-		int sn = m.getSn();
-		if (sn == this.currentSn) {
-			this.promises.add(m.getPrevProposal());
-		}
-		if (this.phase == 0 && promises.size() + 1 > nodeLocationSet.size() / 2) {// plus itself
-			this.promises.add(this.acceptedProposal);
-			this.phase = 1;// prepare phase completed
-			Proposal cur;// Proposal for this round
-			if (this.value != null) {
-				cur = new Proposal(sn, this.value);
-			} else {
-				Proposal pre = promises.poll();// get the previously accepted
-				// proposal with the highest sn
-				cur = new Proposal(sn, pre.getValue());
-			}
-			for (NodeLocationData node : nodeLocationSet) {
-				//writeDebug("Send Accept! Request to " + node + ": " + cur);
-				AcceptRequestMessage acceptRequest = new AcceptRequestMessage(
-						locationData, node, cur);
-				if (node == this.locationData){
-					this.receiveAcceptRequest(acceptRequest);
-				} else {
-					this.messenger.send(acceptRequest);
-				}
-			}
-		}
-	}
-	/*
-	@Override
-	public void receiveDecision(DecisionMessage m) {
-		if (m.getProposal().getSn() == this.currentSn && this.phase == 1) {
-			this.phase = 2; //accept phase completed
-			if (this.value == null){
-				writeDebug("** Value " + m.getProposal().getValue()
-					+ " is returned to client **");
-			} else {
-				writeDebug("** Value " + m.getProposal().getValue() + " is written to database **");
-			}
-		}
-	}
-	*/
-
-	// Acceptor methods
-	@Override
-	public void receivePrepareRequest(PrepareRequestMessage m) {
-		writeDebug("Received Prepare Request from " + m.getSender() + ": ("
-				+ m.getSn() + ")");
-		int sn = m.getSn();
-		if (sn > this.currentSn) {
-			this.currentSn = sn;
-			Message promise = new PromiseMessage(locationData, m.getSender(),
-					sn, acceptedProposal);
-			this.messenger.send(promise);
-		}
-	}
-
-	@Override
-	public void receiveAcceptRequest(AcceptRequestMessage m) {
-		writeDebug("Received Accept Request from " + m.getSender() + ": " + m.getProposal());
-		Proposal p = m.getProposal();
-		int sn = p.getSn();
-		if (sn >= this.currentSn) {
-			this.currentSn = sn;
-			this.acceptedProposal = p;
-			for (NodeLocationData node : nodeLocationSet) {
-				// writeDebug("Send Accepted to" + node);
-				AcceptedMessage accepted = new AcceptedMessage(locationData,
-						node, acceptedProposal);
-				if (node == this.locationData) {
-					this.receiveAccepted(accepted);
-				} else {
-					this.messenger.send(accepted);
-				}
-			}
-		}
-	}
-
-	// Learner methods
-	@Override
-	public void receiveAccepted(AcceptedMessage m) {
-		writeDebug("Accepted from " + m.getSender() + ": " + m.getProposal());
-		Proposal p = m.getProposal();
-		Integer times = learnedProposals.get(p);
-		learnedProposals.put(p, times == null ? 1 : times + 1);
-		if (learnedProposals.get(p) == nodeLocationSet.size() / 2 + 1) {
-			if (p.getSn() > this.currentSn){
-				this.currentSn = p.getSn();
-				this.acceptedProposal = p;
-			}
-			//leader return value to client
-			if (this.locationData.isLeader() && this.currentSn == p.getSn()){
-				this.phase = 2;
-				if (this.value == null){
-					writeDebug("** Value " + m.getProposal().getValue()
-						+ " is returned to client **");
-				} else {
-					writeDebug("** Value " + m.getProposal().getValue() + " is written to database **");
-				}
-			}
-		}
-	}
-
-	private void writeDebug(String s) {
+	protected void writeDebug(String s) {
 		System.out.println(locationData + ": " + s);
 	}
 
+	protected void returnResult(String value, Proposal p) {
+		if (value == null) {
+			writeDebug("** Value " + p.getValue() + " is returned to client **");
+		} else {
+			writeDebug("** Value " + p.getValue()
+					+ " is written to database **");
+		}
+	}
 }

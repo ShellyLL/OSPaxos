@@ -1,32 +1,41 @@
 package OSPaxos;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.PriorityQueue;
 
-public class Node2 extends Node {
+public class Node1 extends Node {
 	// Proposer Variables
-	private PriorityQueue<Proposal> promises; // sorted by sn in descending
-												// order
-	private String value; // for write only
-	private int acceptedNum = 0;// for distinguished learner
+	protected PriorityQueue<Proposal> promises; // sorted by sn in descending order
+	protected String value = null; // for write only
 
 	// Acceptor Variables
-	private Proposal acceptedProposal;
+	protected Proposal acceptedProposal;
 
-
-	public Node2(int NodeID) {
+	// Learner Variables
+	protected Map<Proposal, Integer> learnedProposals;// key:proposal, value: accepted received
+	
+	public Node1(int NodeID) {
 		super(NodeID);
 		// proposer
 		this.promises = null;
+
 		// acceptor
 		this.acceptedProposal = new Proposal(-1, null);// -1 refers to no
-																// proposal accepted
+														// proposal accepted
+		// learner
+		learnedProposals = new HashMap<Proposal, Integer>();
 	}
-
+	/*
 	// message dispatcher
 	public synchronized void receive(Message m) {
 		if (m instanceof PrepareRequestMessage && this.getIsRunning().get(0)) {
 			PrepareRequestMessage prepareRequest = (PrepareRequestMessage) m;
-			receivePrepareRequest(prepareRequest);
+			receivePrepareRequest(prepareRequest); // I think this is
+													// leader/proposer fail
+													// because it is leader's
+													// responsibility to send
+													// prepare request
 		} else if (m instanceof PromiseMessage && this.getIsRunning().get(1)) {
 			PromiseMessage promise = (PromiseMessage) m;
 			receivePromise(promise);
@@ -37,19 +46,15 @@ public class Node2 extends Node {
 		} else if (m instanceof AcceptedMessage && this.getIsRunning().get(3)) {
 			AcceptedMessage accepted = (AcceptedMessage) m;
 			receiveAccepted(accepted);
-		} else if (m instanceof DecisionMessage && this.getIsRunning().get(4)) {
-			DecisionMessage decision = (DecisionMessage) m;
-			receiveDecision(decision);
 		}
 	}
-
+	 */
 	// Proposer methods
 	@Override
 	public void sendPrepareRequest(String v) {
 		// The following two lines are changed by Hanzi when debugging
 		this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
 		this.value = v;
-		this.acceptedNum = 0;
 		this.currentSn++;
 		for (NodeLocationData node : nodeLocationSet) {
 			if (node == this.locationData)
@@ -70,9 +75,8 @@ public class Node2 extends Node {
 		if (sn == this.currentSn) {
 			this.promises.add(m.getPrevProposal());
 		}
-		if (this.promises.size() == nodeLocationSet.size() / 2) {// plus itself
+		if (promises.size() + 1 == nodeLocationSet.size() / 2) {// plus itself
 			this.promises.add(this.acceptedProposal);
-			//writeDebug(promises.toString());
 			Proposal cur;// Proposal for this round
 			if (this.value != null) {
 				cur = new Proposal(sn, this.value);
@@ -112,48 +116,40 @@ public class Node2 extends Node {
 	public void receiveAcceptRequest(AcceptRequestMessage m) {
 		Proposal p = m.getProposal();
 		writeDebug("Received Accept Request from " + m.getSender() + ": " + p);
-		if (p.getSn() >= this.currentSn && p.getSn() > this.acceptedProposal.getSn()) {
-			this.currentSn = p.getSn();
+		int sn = p.getSn();
+		if (sn >= this.currentSn) {
+			this.currentSn = sn;
 			this.acceptedProposal = p;
-			// send accepted only to distinguished learner (leader)
-			AcceptedMessage accepted = new AcceptedMessage(locationData,
-					m.getSender(), acceptedProposal);
-			if (m.getSender() == this.locationData) {
-				this.receiveAccepted(accepted);
-			} else {
-				this.messenger.send(accepted);
+			for (NodeLocationData node : nodeLocationSet) {
+				// writeDebug("Send Accepted to" + node);
+				AcceptedMessage accepted = new AcceptedMessage(locationData,
+						node, acceptedProposal);
+				if (node == this.locationData) {
+					this.receiveAccepted(accepted);
+				} else {
+					this.messenger.send(accepted);
+				}
 			}
 		}
 	}
 
 	// Learner methods
-	// distinguished learner (leader)
+	@Override
 	public void receiveAccepted(AcceptedMessage m) {
 		Proposal p = m.getProposal();
 		writeDebug("Accepted from " + m.getSender() + ": " + p);
-		if (p.getSn() == this.currentSn) {
-			this.acceptedNum++;
-			if (this.acceptedNum == this.nodeLocationSet.size() / 2 + 1) {
+		Integer times = learnedProposals.get(p);
+		learnedProposals.put(p, times == null ? 1 : times + 1);
+		if (learnedProposals.get(p) == nodeLocationSet.size() / 2 + 1) {
+			if (p.getSn() > this.currentSn) {
+				this.currentSn = p.getSn();
+				this.acceptedProposal = p;
+			}
+			// leader return value to client
+			if (this.locationData.isLeader() && this.currentSn == p.getSn()) {
 				returnResult(this.value, p);
-				for (NodeLocationData node : this.nodeLocationSet) {
-					if (node == locationData)
-						continue;
-					DecisionMessage decision = new DecisionMessage(
-							locationData, node, p);
-					this.messenger.send(decision);
-				}
 			}
 		}
 	}
-	
-	//other learners
-	public void receiveDecision(DecisionMessage m) {
-		Proposal p = m.getProposal();
-		writeDebug("Received Decision from " + m.getSender() + ": " + p);
-		if (p.getSn() >= this.currentSn) {
-			this.currentSn = p.getSn();
-			this.acceptedProposal = p;
-		}
-	}
-	
+
 }
