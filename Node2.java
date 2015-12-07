@@ -7,11 +7,16 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-public class Node implements Proposer, Acceptor, Learner {
-	
+public class Node2 implements Proposer, Acceptor, Learner2 {
+
+	// by Hanzi, I changed the variable name nodes to nodeLocationSet in order
+	// to
+	// keep consistent with Main
+	// Node Data
 	private Set<NodeLocationData> nodeLocationSet; // store the NodeLocation of
-	// all the nodes in the group
-	private Map<NodeLocationData, Node> nodeLocationMap;
+	// all the
+	// nodes in the group
+	private Map<NodeLocationData, Node2> nodeLocationMap;
 	private NodeLocationData locationData; // unique locationData to identify
 	// itself
 	private Messenger messenger;
@@ -21,20 +26,21 @@ public class Node implements Proposer, Acceptor, Learner {
 	private PriorityQueue<Proposal> promises; // sorted by sn in descending order
 	private int phase; // indicate which phase of current round [0,1,2]
 	private String value; // for write only
+	private int acceptedNum;
 
 	// Acceptor Variables
 	private Proposal acceptedProposal;
 
 	// Learner Variables
-	private Map<Proposal, Integer> learnedProposals;// key:proposal, value:
+	//private Map<Proposal, Integer> learnedProposals;// key:proposal, value:
 	// times learned
 
 	// state failure variable
 	private ArrayList<Boolean> isRunning;
 
-	public Node(int NodeID) {
+	public Node2(int NodeID) {
 		this.nodeLocationSet = new HashSet<NodeLocationData>();
-		this.nodeLocationMap = new HashMap<NodeLocationData, Node>();
+		this.nodeLocationMap = new HashMap<NodeLocationData, Node2>();
 		this.locationData = new NodeLocationData(NodeID);
 		this.messenger = new Messenger(nodeLocationMap);
 		this.currentSn = -1;
@@ -47,7 +53,7 @@ public class Node implements Proposer, Acceptor, Learner {
 														// proposal accepted
 
 		// learner
-		learnedProposals = new HashMap<Proposal, Integer>();
+		//learnedProposals = new HashMap<Proposal, Integer>();
 
 		// state failure
 		this.isRunning = new ArrayList<>();
@@ -75,7 +81,7 @@ public class Node implements Proposer, Acceptor, Learner {
 		this.nodeLocationSet = s;
 	}
 
-	public void setMessenger(Map<NodeLocationData, Node> map) {
+	public void setMessenger(Map<NodeLocationData, Node2> map) {
 		this.messenger = new Messenger(map);
 	}
 
@@ -126,6 +132,9 @@ public class Node implements Proposer, Acceptor, Learner {
 		} else if (m instanceof AcceptedMessage && this.getIsRunning().get(3)) {
 			AcceptedMessage accepted = (AcceptedMessage) m;
 			receiveAccepted(accepted);
+		} else if (m instanceof DecisionMessage && this.getIsRunning().get(4)) {
+			DecisionMessage decision = (DecisionMessage) m;
+			receiveDecision(decision);
 		}
 	}
 
@@ -136,6 +145,7 @@ public class Node implements Proposer, Acceptor, Learner {
 		this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
 		this.value = v;
 		this.phase = 0;
+		this.acceptedNum = 0;
 		this.currentSn++;
 		for (NodeLocationData node : nodeLocationSet) {
 			if (node == this.locationData)
@@ -178,21 +188,28 @@ public class Node implements Proposer, Acceptor, Learner {
 			}
 		}
 	}
-	/*
-	@Override
-	public void receiveDecision(DecisionMessage m) {
-		if (m.getProposal().getSn() == this.currentSn && this.phase == 1) {
-			this.phase = 2; //accept phase completed
-			if (this.value == null){
-				writeDebug("** Value " + m.getProposal().getValue()
-					+ " is returned to client **");
-			} else {
-				writeDebug("** Value " + m.getProposal().getValue() + " is written to database **");
+	
+	public void receiveAccepted(AcceptedMessage m) {
+		Proposal p = m.getProposal();
+		writeDebug("Accepted from " + m.getSender() + ": " + p);
+		if (p.getSn() == this.currentSn){
+			this.acceptedNum++;
+			if (this.acceptedNum == this.nodeLocationSet.size() / 2 + 1){
+				if (this.value == null){
+					writeDebug("** Value " + m.getProposal().getValue()
+						+ " is returned to client **");
+				} else {
+					writeDebug("** Value " + m.getProposal().getValue() + " is written to database **");
+				}
+				for (NodeLocationData node : this.nodeLocationSet){
+					if (node == locationData) continue;
+					DecisionMessage decision = new DecisionMessage(locationData, node, p);
+					this.messenger.send(decision);
+				}
 			}
 		}
 	}
-	*/
-
+	
 	// Acceptor methods
 	@Override
 	public void receivePrepareRequest(PrepareRequestMessage m) {
@@ -211,45 +228,27 @@ public class Node implements Proposer, Acceptor, Learner {
 	public void receiveAcceptRequest(AcceptRequestMessage m) {
 		writeDebug("Received Accept Request from " + m.getSender() + ": " + m.getProposal());
 		Proposal p = m.getProposal();
-		int sn = p.getSn();
-		if (sn >= this.currentSn) {
-			this.currentSn = sn;
+		if (p.getSn() >= this.currentSn) {
+			this.currentSn = p.getSn();
 			this.acceptedProposal = p;
-			for (NodeLocationData node : nodeLocationSet) {
-				// writeDebug("Send Accepted to" + node);
-				AcceptedMessage accepted = new AcceptedMessage(locationData,
-						node, acceptedProposal);
-				if (node == this.locationData) {
-					this.receiveAccepted(accepted);
-				} else {
-					this.messenger.send(accepted);
-				}
+			// send accepted only to distinguished learner (leader)
+			AcceptedMessage accepted = new AcceptedMessage(locationData, m.getSender(), acceptedProposal);
+			if (m.getSender() == this.locationData){
+				this.receiveAccepted(accepted);
+			} else {
+				this.messenger.send(accepted);
 			}
 		}
 	}
 
 	// Learner methods
 	@Override
-	public void receiveAccepted(AcceptedMessage m) {
-		writeDebug("Accepted from " + m.getSender() + ": " + m.getProposal());
+	public void receiveDecision(DecisionMessage m) {
 		Proposal p = m.getProposal();
-		Integer times = learnedProposals.get(p);
-		learnedProposals.put(p, times == null ? 1 : times + 1);
-		if (learnedProposals.get(p) == nodeLocationSet.size() / 2 + 1) {
-			if (p.getSn() > this.currentSn){
-				this.currentSn = p.getSn();
-				this.acceptedProposal = p;
-			}
-			//leader return value to client
-			if (this.locationData.isLeader() && this.currentSn == p.getSn()){
-				this.phase = 2;
-				if (this.value == null){
-					writeDebug("** Value " + m.getProposal().getValue()
-						+ " is returned to client **");
-				} else {
-					writeDebug("** Value " + m.getProposal().getValue() + " is written to database **");
-				}
-			}
+		writeDebug("Received Decision from " + m.getSender() + ": " + p);
+		if (p.getSn() >= this.currentSn){
+			this.currentSn = p.getSn();
+			this.acceptedProposal = p;
 		}
 	}
 
