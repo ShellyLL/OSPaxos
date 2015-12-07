@@ -49,7 +49,7 @@ public class Node implements Proposer, Acceptor, Learner {
 		// learner
 		learnedProposals = new HashMap<Proposal, Integer>();
 
-		// state failure
+		// state failure, why it is 1 to 5
 		this.isRunning = new ArrayList<>();
 		for (int i = 0; i < 5; i++) {
 			this.isRunning.add(true);
@@ -116,7 +116,8 @@ public class Node implements Proposer, Acceptor, Learner {
 	public void receive(Message m) {
 		if (m instanceof PrepareRequestMessage && this.getIsRunning().get(0)) {
 			PrepareRequestMessage prepareRequest = (PrepareRequestMessage) m;
-			receivePrepareRequest(prepareRequest);
+			receivePrepareRequest(prepareRequest); //I think this is leader/proposer fail
+			                                       //because it is leader's responsibility to send prepare request
 		} else if (m instanceof PromiseMessage && this.getIsRunning().get(1)) {
 			PromiseMessage promise = (PromiseMessage) m;
 			receivePromise(promise);
