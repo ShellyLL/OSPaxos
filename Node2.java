@@ -4,14 +4,12 @@ import java.util.*;
 
 public class Node2 extends Node {
 	// Proposer Variables
-	private PriorityQueue<Proposal> promises; // sorted by sn in descending
-												// order
+	private PriorityQueue<Proposal> promises; // sorted by sn in descending order
 	private String value; // for write only
 	private int acceptedNum = 0;// for distinguished learner
 
 	// Acceptor Variables
 	private Proposal acceptedProposal;
-
 
 	public Node2(int NodeID) {
 		super(NodeID);
@@ -45,10 +43,11 @@ public class Node2 extends Node {
 
 	// Proposer methods
 	@Override
-	public void sendPrepareRequest(String v) {
+	public void sendPrepareRequest(String v, long startTime) {
 		// The following two lines are changed by Hanzi when debugging
 		this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
 		this.value = v;
+		this.startTime = startTime;
 		this.acceptedNum = 0;
 		this.currentSn++;
 		for (NodeLocationData node : nodeLocationSet) {

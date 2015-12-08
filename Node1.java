@@ -103,10 +103,11 @@ public class Node1 extends Node {
     */
    // Proposer methods
    @Override
-   public void sendPrepareRequest(String v) {
+   public void sendPrepareRequest(String v, long startTime) {
       // The following two lines are changed by Hanzi when debugging
       this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
       this.value = v;
+      this.startTime = startTime;
       this.currentSn++;
       for (NodeLocationData node : nodeLocationSet) {
          if (node == this.locationData)
