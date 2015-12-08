@@ -4,6 +4,7 @@ import java.util.*;
 
 public abstract class Node implements Proposer, Acceptor, Learner {
 
+   
 	protected Set<NodeLocationData> nodeLocationSet; // store the NodeLocation
 														// of
 	// all the nodes in the group
@@ -17,6 +18,7 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 	protected ArrayList<Boolean> isRunning;
 
 	public Node(int NodeID) {
+
 		this.nodeLocationSet = new HashSet<NodeLocationData>();
 		this.nodeLocationMap = new HashMap<NodeLocationData, Node>();
 		this.locationData = new NodeLocationData(NodeID);
@@ -102,9 +104,9 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 		} else if (m instanceof AcceptedMessage && this.getIsRunning().get(3)) {
 			AcceptedMessage accepted = (AcceptedMessage) m;
 			receiveAccepted(accepted);
-		}
+		} 
 	}
-
+	
 	protected void writeDebug(String s) {
 		System.out.println(this.locationData + ": " + s);
 	}

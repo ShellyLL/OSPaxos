@@ -51,6 +51,8 @@ public class Main {
             // failure can happen during any state in the voting process
             else if (cmd.equalsIgnoreCase("proposorStateFail"))
                proposorStateFail();
+            else if (cmd.equalsIgnoreCase("acceptorStateFail"))
+               acceptorStateFail();
             else if (cmd.equalsIgnoreCase("stateFail"))
                stateFail();
             else if (cmd.equalsIgnoreCase("stateRecover"))
@@ -220,6 +222,19 @@ public class Main {
       
       leaderFail();
    }
+   
+   private static void acceptorStateFail() {
+      int random = randInt(0, 1);
+      for (Node1 n : nodes) {
+         if (!n.isLeader()) {
+            if (random == 0)
+               n.isRunning.set(0, false);
+            else 
+               n.isRunning.set(2, false);
+            break;
+         }
+      }
+   }
 
    private static void stateFail() {
       writeDebug("Random set a node failed ");
@@ -261,6 +276,7 @@ public class Main {
    private static void resetSetAndMap() {
       // give node list to all nodes (statically)
       for (Node1 node : nodes) {
+         node.setNodes(nodes);
          node.setNodeList(nodeLocationSet);
          node.setMessenger(nodeLocationMap);
       }
