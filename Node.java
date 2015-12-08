@@ -3,11 +3,10 @@ package OSPaxos;
 import java.util.*;
 
 public abstract class Node implements Proposer, Acceptor, Learner {
-
 	protected Set<NodeLocationData> nodeLocationSet; // store the NodeLocation
 														// of
 	// all the nodes in the group
-	protected Map<NodeLocationData, Node> nodeLocationMap;
+	//protected Map<NodeLocationData, Node> nodeLocationMap;
 	protected NodeLocationData locationData; // unique locationData to identify
 	// itself
 	protected Messenger messenger;
@@ -17,10 +16,10 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 	protected ArrayList<Boolean> isRunning;
 
 	public Node(int NodeID) {
-		this.nodeLocationSet = new HashSet<NodeLocationData>();
-		this.nodeLocationMap = new HashMap<NodeLocationData, Node>();
+		//this.nodeLocationSet = new HashSet<NodeLocationData>();
+		//this.nodeLocationMap = new HashMap<NodeLocationData, Node>();
 		this.locationData = new NodeLocationData(NodeID);
-		this.messenger = new Messenger(nodeLocationMap);
+		//this.messenger = new Messenger(nodeLocationMap);
 		this.currentSn = -1;
 
 		// state failure, why it is 1 to 5
@@ -104,12 +103,12 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 			receiveAccepted(accepted);
 		}
 	}
-
-	protected void writeDebug(String s) {
+	
+	protected synchronized void writeDebug(String s) {
 		System.out.println(this.locationData + ": " + s);
 	}
 	
-	protected void writeEmp(String s){
+	protected synchronized void writeEmp(String s){
 		System.err.println(this.locationData + ": " + s);
 	}
 	

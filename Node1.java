@@ -75,7 +75,7 @@ public class Node1 extends Node {
 		if (sn == this.currentSn) {
 			this.promises.add(m.getPrevProposal());
 		}
-		if (promises.size() + 1 == nodeLocationSet.size() / 2) {// plus itself
+		if (promises.size() == nodeLocationSet.size() / 2) {// plus itself
 			this.promises.add(this.acceptedProposal);
 			Proposal cur;// Proposal for this round
 			if (this.value != null) {
