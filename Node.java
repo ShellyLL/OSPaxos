@@ -16,7 +16,7 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 	protected ArrayList<Boolean> isRunning;
 
 	public Node(int NodeID) {
-		//this.nodeLocationSet = new HashSet<NodeLocationData>();
+		this.nodeLocationSet = new HashSet<NodeLocationData>();
 		//this.nodeLocationMap = new HashMap<NodeLocationData, Node>();
 		this.locationData = new NodeLocationData(NodeID);
 		//this.messenger = new Messenger(nodeLocationMap);
@@ -101,7 +101,7 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 		} else if (m instanceof AcceptedMessage && this.getIsRunning().get(3)) {
 			AcceptedMessage accepted = (AcceptedMessage) m;
 			receiveAccepted(accepted);
-		}
+		} 
 	}
 	
 	protected synchronized void writeDebug(String s) {

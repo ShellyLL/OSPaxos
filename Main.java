@@ -4,22 +4,21 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-// by Hanzi: I rewrite Main
 public class Main {
 
-   private static Set<Node> nodes;
+   private static Set<Node1> nodes;
    private static Set<NodeLocationData> nodeLocationSet;
    private static Map<NodeLocationData, Node> nodeLocationMap;
-   private static Queue<Node> failedLeaders;
-   private static Queue<Node> failedVoters;
+   private static Queue<Node1> failedLeaders;
+   private static Queue<Node1> failedVoters;
    private static final long failTime = 5;
 
    public static void main(String[] args) throws IOException {
-      nodes = new HashSet<Node>();
-      failedLeaders = new LinkedList<Node>();
-      failedVoters = new LinkedList<Node>();
-      nodeLocationSet = new HashSet<NodeLocationData>();
-      nodeLocationMap = new HashMap<NodeLocationData, Node>();
+      //nodes = new HashSet<Node1>();
+      failedLeaders = new LinkedList<Node1>();
+      failedVoters = new LinkedList<Node1>();
+      //nodeLocationSet = new HashSet<NodeLocationData>();
+      //nodeLocationMap = new HashMap<NodeLocationData, Node>();
       System.out.println("Type 'help' for a list of commands");
       BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
       while (true) {
@@ -50,6 +49,10 @@ public class Main {
             else if (cmd.equalsIgnoreCase("failRecoverDemo"))
                failAndRecoverDemo(); 
             // failure can happen during any state in the voting process
+            else if (cmd.equalsIgnoreCase("proposorStateFail"))
+               proposorStateFail();
+            else if (cmd.equalsIgnoreCase("acceptorStateFail"))
+               acceptorStateFail();
             else if (cmd.equalsIgnoreCase("stateFail"))
                stateFail();
             else if (cmd.equalsIgnoreCase("stateRecover"))
@@ -64,8 +67,12 @@ public class Main {
    }
 
    private static void createNodes(int n) {
+      nodes = new HashSet<Node1>();
+      nodeLocationSet = new HashSet<NodeLocationData>();
+      nodeLocationMap = new HashMap<NodeLocationData, Node>();
+
       for (int i = 0; i < n; i++) {
-         Node node = new Node(i);
+         Node1 node = new Node1(i);
 
          if (i == 0) {// make 0 leader
             node.becomeLeader();
@@ -78,9 +85,9 @@ public class Main {
    }
 
 
-   private static void read(Set<Node> nodes) {
+   private static void read(Set<Node1> nodes) {
       writeDebug("Proposing for reading: ");
-      for (Node node : nodes) {
+      for (Node1 node : nodes) {
          if (node.isLeader()) {
             node.sendPrepareRequest(null);//if read, just pass null for value
             break;
@@ -88,9 +95,9 @@ public class Main {
       }
    }
 
-   private static void write(String v, Set<Node> nodes) {
+   private static void write(String v, Set<Node1> nodes) {
       writeDebug("Proposing for writing: " + v);
-      for (Node node : nodes) {
+      for (Node1 node : nodes) {
          if (node.isLeader()) {
             node.sendPrepareRequest(v);
             break;
@@ -102,7 +109,7 @@ public class Main {
       writeDebug("The leader is failed ");
       int leaderID = 0;
       // remove the leader node
-      for (Node node : nodes) {
+      for (Node1 node : nodes) {
          if (node.isLeader()) {
             leaderID = node.getLocationData().getNodeID();
             failedLeaders.add(node);
@@ -123,7 +130,7 @@ public class Main {
    private static void voterFail(int voterID) {
       writeDebug("A voter is failed ");
       if (voterID == -1) {
-         for (Node node : nodes) {
+         for (Node1 node : nodes) {
             if (!node.isLeader()) {
                failedVoters.add(node);
                removeFromSetAndMap(node);
@@ -131,7 +138,7 @@ public class Main {
             }
          }
       } else {
-         for (Node node : nodes) {
+         for (Node1 node : nodes) {
             if (node.getLocationData().getNodeID() == voterID) {
                failedVoters.add(node);
                removeFromSetAndMap(node);
@@ -159,13 +166,13 @@ public class Main {
          return;
       }
 
-      Node node1 = failedLeaders.poll();
+      Node1 node1 = failedLeaders.poll();
       writeDebug("Leader " + node1.getLocationData().getNodeID()
             + " is Recovered");
       node1.becomeLeader();
       addToSetAndMap(node1);
       while (!failedLeaders.isEmpty()) {
-         Node node2 = failedLeaders.poll();
+         Node1 node2 = failedLeaders.poll();
          writeDebug("Node " + node2.getLocationData().getNodeID()
                + " is Recovered");
          addToSetAndMap(node2);
@@ -180,7 +187,7 @@ public class Main {
       }
 
       while (!failedVoters.isEmpty()) {
-         Node node = failedVoters.poll();
+         Node1 node = failedVoters.poll();
          writeDebug("Node " + node.getLocationData().getNodeID()
                + " is Recovered");
          addToSetAndMap(node);
@@ -205,18 +212,42 @@ public class Main {
       read(nodes);
    }
 
+   private static void proposorStateFail() {
+      int randomProposorState = randInt(0, 1);
+      for (Node1 n : nodes) {
+         if (n.isLeader()) {
+            n.isRunning.set(1, false);
+         }
+      }
+      
+      leaderFail();
+   }
+   
+   private static void acceptorStateFail() {
+      int random = randInt(0, 1);
+      for (Node1 n : nodes) {
+         if (!n.isLeader()) {
+            if (random == 0)
+               n.isRunning.set(0, false);
+            else 
+               n.isRunning.set(2, false);
+            break;
+         }
+      }
+   }
+
    private static void stateFail() {
       writeDebug("Random set a node failed ");
       int randomID = randInt(0, nodes.size() - 1);
       writeDebug("Random pick a node " + randomID + " failed");
-      Node node = null;
-      for (Node n : nodes) {
+      Node1 node = null;
+      for (Node1 n : nodes) {
          if (n.getLocationData().getNodeID() == randomID) {
             node = n;
             break;
          }
       }
-      
+
       int randomState = randInt(0, 4);
       writeDebug("Random pick a state " + randomState + " failed");
       ArrayList<Boolean> isRunning = node.getIsRunning();
@@ -230,13 +261,13 @@ public class Main {
 
    }
 
-   private static void addToSetAndMap(Node node) {
+   private static void addToSetAndMap(Node1 node) {
       nodes.add(node);
       nodeLocationSet.add(node.getLocationData());
       nodeLocationMap.put(node.getLocationData(), node);
    }
 
-   private static void removeFromSetAndMap(Node node) {
+   private static void removeFromSetAndMap(Node1 node) {
       nodes.remove(node);
       nodeLocationSet.remove(node.getLocationData());
       nodeLocationMap.remove(node.getLocationData());
@@ -244,7 +275,8 @@ public class Main {
 
    private static void resetSetAndMap() {
       // give node list to all nodes (statically)
-      for (Node node : nodes) {
+      for (Node1 node : nodes) {
+         node.setNodes(nodes);
          node.setNodeList(nodeLocationSet);
          node.setMessenger(nodeLocationMap);
       }
