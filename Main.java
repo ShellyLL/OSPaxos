@@ -14,11 +14,11 @@ public class Main {
    private static final long failTime = 5;
 
    public static void main(String[] args) throws IOException {
-      //nodes = new HashSet<Node1>();
+      nodes = new HashSet<Node1>();
       failedLeaders = new LinkedList<Node1>();
       failedVoters = new LinkedList<Node1>();
-      //nodeLocationSet = new HashSet<NodeLocationData>();
-      //nodeLocationMap = new HashMap<NodeLocationData, Node>();
+      nodeLocationSet = new HashSet<NodeLocationData>();
+      nodeLocationMap = new HashMap<NodeLocationData, Node>();
       System.out.println("Type 'help' for a list of commands");
       BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
       while (true) {
@@ -53,10 +53,6 @@ public class Main {
                proposorStateFail();
             else if (cmd.equalsIgnoreCase("acceptorStateFail"))
                acceptorStateFail();
-            else if (cmd.equalsIgnoreCase("learnerStateFail"))
-               learnerStateFail();
-            else if (cmd.equalsIgnoreCase("stateRecover"))
-               stateRecover();
             else
                writeDebug("Unrecognized command");
 
@@ -67,6 +63,22 @@ public class Main {
    }
 
    private static void createNodes(int n) {
+      nodes.clear();
+      nodeLocationSet.clear();
+      nodeLocationMap.clear();
+      for (int i = 0; i < n; i++) {
+         Node1 node = new Node1(i);
+
+         if (i == 0) {// make 0 leader
+            node.becomeLeader();
+         }
+         addToSetAndMap(node);
+      }
+      resetSetAndMap();
+      writeDebug(n + " nodes created");
+   }
+   
+   private static void createNodes2(int n) {
       nodes = new HashSet<Node1>();
       nodeLocationSet = new HashSet<NodeLocationData>();
       nodeLocationMap = new HashMap<NodeLocationData, Node>();
@@ -213,7 +225,6 @@ public class Main {
    }
 
    private static void proposorStateFail() {
-      int randomProposorState = randInt(0, 1);
       for (Node1 n : nodes) {
          if (n.isLeader()) {
             n.isRunning.set(1, false);
@@ -225,19 +236,11 @@ public class Main {
       int random = randInt(0, 1);
       for (Node1 n : nodes) {
          if (!n.isLeader()) {
-            //if (random == 0)
+            if (random == 0) {
                n.isRunning.set(0, false);
-            //else 
-            //   n.isRunning.set(2, false);
+            } else 
+               n.isRunning.set(2, false);           
             break;
-         }
-      }
-   }
-   
-   private static void learnerStateFail() {
-      for (Node1 n : nodes) {
-         if (n.isLeader()) {
-            n.isRunning.set(3, false);
          }
       }
    }
@@ -263,10 +266,6 @@ public class Main {
       node.setIsRunning(isRunning);
    }
 
-   private static void stateRecover() {
-
-   }
-
    private static void addToSetAndMap(Node1 node) {
       nodes.add(node);
       nodeLocationSet.add(node.getLocationData());
@@ -282,7 +281,7 @@ public class Main {
    private static void resetSetAndMap() {
       // give node list to all nodes (statically)
       for (Node1 node : nodes) {
-         node.setNodes(nodes);
+         node.setNode1s(nodes);
          node.setNodeList(nodeLocationSet);
          node.setMessenger(nodeLocationMap);
       }

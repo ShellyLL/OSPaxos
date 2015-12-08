@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-// by Hanzi: I rewrite Main
 public class Main2 {
 
 	private static Set<Node> nodes;
@@ -53,10 +52,12 @@ public class Main2 {
 				else if (cmd.equalsIgnoreCase("failRecoverDemo"))
 					failAndRecoverDemo();
 				// failure can happen during any state in the voting process
+				else if (cmd.equalsIgnoreCase("proposorStateFail"))
+               proposorStateFail();
+            else if (cmd.equalsIgnoreCase("acceptorStateFail"))
+               acceptorStateFail();
 				else if (cmd.equalsIgnoreCase("stateFail"))
 					stateFail();
-				else if (cmd.equalsIgnoreCase("stateRecover"))
-					stateRecover();
 				else
 					writeDebug("Unrecognized command");
 
@@ -225,6 +226,27 @@ public class Main2 {
 		read(nodes);
 	}
 
+   private static void proposorStateFail() {
+      for (Node n : nodes) {
+         if (n.isLeader()) {
+            n.isRunning.set(1, false);
+         }
+      }
+   }
+   
+   private static void acceptorStateFail() {
+      int random = randInt(0, 1);
+      for (Node n : nodes) {
+         if (!n.isLeader()) {
+            if (random == 0) {
+               n.isRunning.set(0, false);
+            } else 
+               n.isRunning.set(2, false);           
+            break;
+         }
+      }
+   }
+   
 	private static void stateFail() {
 		writeDebug("Random set a node failed ");
 		int randomID = randInt(0, nodes.size() - 1);
@@ -244,10 +266,6 @@ public class Main2 {
 			isRunning.set(i, false);
 		}
 		node.setIsRunning(isRunning);
-	}
-
-	private static void stateRecover() {
-
 	}
 
 	private static void addToSetAndMap(Node node) {
@@ -301,13 +319,4 @@ public class Main2 {
 		System.out.println(" ***");
 	}
 
-	/*
-	 * private static void write (String s, HashSet<Node> nodes) {
-	 * writeDebug("Proposing for writing: " + s); for(Node node : nodes)
-	 * if(node.isLeader()) { node.propose(s, nodes); break; } }
-	 * 
-	 * private static String read (HashSet<Node> nodes) {
-	 * writeDebug("Proposing for reading: "); for(Node node : nodes)
-	 * if(node.isLeader()) { node.propose(null, nodes); break; } return ""; }
-	 */
 }
