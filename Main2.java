@@ -102,7 +102,7 @@ public class Main2 {
 		writeDebug("Proposing for reading:");
 		for (Node node : nodes) {
 			if (node.isLeader()) {
-				node.sendPrepareRequest(null);// if read, just pass null for value
+				node.sendPrepareRequest(null, System.currentTimeMillis());// if read, just pass null for value
 				break;
 			}
 		}
@@ -112,7 +112,7 @@ public class Main2 {
 		writeDebug("Proposing for writing: " + v);
 		for (Node node : nodes) {
 			if (node.isLeader()) {
-				node.sendPrepareRequest(v);
+				node.sendPrepareRequest(v, System.currentTimeMillis());
 				break;
 			}
 		}

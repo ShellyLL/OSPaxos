@@ -11,6 +11,7 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 	// itself
 	protected Messenger messenger;
 	protected int currentSn; // to keep track of sn used so far
+	protected long startTime; //for timer
 
 	// state failure variable
 	protected ArrayList<Boolean> isRunning;
@@ -108,16 +109,13 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 		System.out.println(this.locationData + ": " + s);
 	}
 	
-	protected synchronized void writeEmp(String s){
-		System.err.println(this.locationData + ": " + s);
-	}
-	
 	protected void returnResult(String value, Proposal p) {
+		String v = p.getValue();
 		if (value == null) {
-			writeEmp("** Value " + p.getValue() + " is returned to client **");
+			System.err.println("*** Value " + v + " is returned to client ***");
 		} else {
-			writeEmp("** Value " + p.getValue()
-					+ " is written to database **");
+			System.err.println("*** Value " + v + " is written to datumbase ***");
 		}
+		System.err.println("*** Time used: " + (System.currentTimeMillis() - startTime) + " msec ***");
 	}
 }
