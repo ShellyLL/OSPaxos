@@ -106,14 +106,18 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 	}
 
 	protected void writeDebug(String s) {
-		System.out.println(locationData + ": " + s);
+		System.out.println(this.locationData + ": " + s);
 	}
-
+	
+	protected void writeEmp(String s){
+		System.err.println(this.locationData + ": " + s);
+	}
+	
 	protected void returnResult(String value, Proposal p) {
 		if (value == null) {
-			writeDebug("** Value " + p.getValue() + " is returned to client **");
+			writeEmp("** Value " + p.getValue() + " is returned to client **");
 		} else {
-			writeDebug("** Value " + p.getValue()
+			writeEmp("** Value " + p.getValue()
 					+ " is written to database **");
 		}
 	}
