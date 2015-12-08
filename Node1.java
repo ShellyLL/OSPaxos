@@ -19,6 +19,8 @@ public class Node1 extends Node {
    // Learner Variables
    protected Map<Proposal, Integer> learnedProposals;// key:proposal, value: accepted received
 
+   protected int count = 0;
+   
    public Node1(int NodeID) {
       super(NodeID);
       this.nodes = new HashSet<Node1>();
@@ -32,23 +34,58 @@ public class Node1 extends Node {
       learnedProposals = new HashMap<Proposal, Integer>();
    }
 
+   public void setCount(int n) {
+      this.count = n;
+   }
+   
    public void setNodes(Set<Node1> s) {
       this.nodes = s;
    }
+   
+   public String getValue() {
+      return this.value;
+   }
+   
+   public void setValue(String v) {
+      this.value = v;
+   }
 
+   public boolean getOneNodeRunning () {
+      boolean res = true;
+      for (Boolean i : this.isRunning) {
+         res = res && i;
+      }
+      return res;
+   }
+   
+   public boolean getAllRunning() {
+      boolean res = true;
+      for (Node1 n : nodes) {
+         res = res && n.getOneNodeRunning();
+      }
+      return res;
+   }
+   
    // message dispatcher
    public synchronized void receive(Message m) {
       if (m instanceof PrepareRequestMessage && this.getIsRunning().get(0)) {
          PrepareRequestMessage prepareRequest = (PrepareRequestMessage) m;
          receivePrepareRequest(prepareRequest);
-      } else if (m instanceof PromiseMessage && this.getIsRunning().get(1)) {
+      } else if (m instanceof PromiseMessage && this.getIsRunning().get(0) 
+            && this.getIsRunning().get(1)) {
          PromiseMessage promise = (PromiseMessage) m;
          receivePromise(promise);
       } else if (m instanceof AcceptRequestMessage
+            && this.getIsRunning().get(0) 
+            && this.getIsRunning().get(1)
             && this.getIsRunning().get(2)) {
          AcceptRequestMessage acceptRequest = (AcceptRequestMessage) m;
          receiveAcceptRequest(acceptRequest);
-      } else if (m instanceof AcceptedMessage && this.getIsRunning().get(3)) {
+      } else if (m instanceof AcceptedMessage 
+            && this.getIsRunning().get(0) 
+            && this.getIsRunning().get(1)
+            && this.getIsRunning().get(2) 
+            && this.getIsRunning().get(3)) {
          AcceptedMessage accepted = (AcceptedMessage) m;
          receiveAccepted(accepted);
       } else if (m instanceof PrepareRequestMessage && !this.getIsRunning().get(0)) {
@@ -60,24 +97,52 @@ public class Node1 extends Node {
       } else if (m instanceof PromiseMessage && !this.isRunning.get(1)) {
          writeDebug("Proposor Fail: Fail to Evaluate Acceptor's Promise and Send Accept!");
          proposorFail();
-      }
+      } else if (m instanceof AcceptedMessage && !this.isRunning.get(3)) {
+         writeDebug("Learner Fail: Can not Learn the Result");
+         learnerFail();
+      } 
    }
 
    protected void acceptorFail() {
+      this.nodeLocationSet.remove(this.locationData);
       for (Node1 n : nodes) {
-         //n.nodeLocationMap.remove(this);
-         n.nodeLocationSet.remove(this);
+         n.setNodeList(nodeLocationSet);
       }
    }
    
    protected void proposorFail() {
+      if (count != 0)
+         return;
+      
       for (Node1 n : nodes) {
-         //n.nodeLocationMap.remove(this);
-         n.nodeLocationSet.remove(this);
+         if (n.getLocationData().getNodeID() == this.getLocationData().getNodeID() + 1) {
+            n.becomeLeader();
+            n.setValue(this.getValue()); 
+            break;
+         }
       }
+            
+      this.nodeLocationSet.remove(this.locationData);
+      for (Node1 n : nodes) {
+         n.setNodeList(nodeLocationSet);
+         n.setCount(1);
+      }
+      
+      for (Node1 n : nodes) {
+         if (n.isLeader()) {
+            n.sendPrepareRequest(n.getValue());
+            break;
+         }
+      }
+      
    }
 
-
+   protected void learnerFail() {
+      this.nodeLocationSet.remove(this.locationData);
+      for (Node1 n : nodes) {
+         n.setNodeList(nodeLocationSet);
+      }
+   }
    /*
 	// message dispatcher
 	public synchronized void receive(Message m) {
@@ -104,7 +169,6 @@ public class Node1 extends Node {
    // Proposer methods
    @Override
    public void sendPrepareRequest(String v) {
-      // The following two lines are changed by Hanzi when debugging
       this.promises = new PriorityQueue<Proposal>(nodeLocationSet.size());
       this.value = v;
       this.currentSn++;
