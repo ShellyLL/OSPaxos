@@ -52,12 +52,10 @@ public class Main2 {
 				else if (cmd.equalsIgnoreCase("failRecoverDemo"))
 					failAndRecoverDemo();
 				// failure can happen during any state in the voting process
-				else if (cmd.equalsIgnoreCase("proposorStateFail"))
-               proposorStateFail();
-            else if (cmd.equalsIgnoreCase("acceptorStateFail"))
-               acceptorStateFail();
-				else if (cmd.equalsIgnoreCase("stateFail"))
-					stateFail();
+				else if (cmd.equalsIgnoreCase("leaderStateFail"))
+					proposorStateFail();
+				else if (cmd.equalsIgnoreCase("voterStateFail"))
+					acceptorStateFail();
 				else
 					writeDebug("Unrecognized command");
 
@@ -100,6 +98,10 @@ public class Main2 {
 	}
 
 	private static void read(Set<Node> nodes) {
+		if (nodes.isEmpty()) {
+			writeDebug("Please init nodes first");
+			return;
+		}
 		writeDebug("Proposing for reading:");
 		for (Node node : nodes) {
 			if (node.isLeader()) {
@@ -110,6 +112,10 @@ public class Main2 {
 	}
 
 	private static void write(String v, Set<Node> nodes) {
+		if (nodes.isEmpty()) {
+			writeDebug("Please init nodes first");
+			return;
+		}
 		writeDebug("Proposing for writing: " + v);
 		for (Node node : nodes) {
 			if (node.isLeader()) {
@@ -283,6 +289,7 @@ public class Main2 {
 	private static void resetSetAndMap() {
 		// give node list to all nodes (statically)
 		for (Node node : nodes) {
+			node.setNodes(nodes);
 			node.setNodeList(nodeLocationSet);
 			node.setMessenger(nodeLocationMap);
 		}
@@ -296,13 +303,14 @@ public class Main2 {
 		m += "\n\tinit <num> - creates <num> nodes";
 		m += "\n\tread - the current leader accept the client's read request and expect to return to the client";
 		m += "\n\twrite <value> - the current leader accept the client's write request and expect to return to the client";
-		m += "\n\tleaderFail - tests leaderFail";
-		m += "\n\tvoterFail - tests voterFail";
+		m += "\n\tleaderFail - tests leader fail";
+		m += "\n\tvoterFail - tests voter fail";
 		m += "\n\trandomFail - Random set a node fail";
 		m += "\n\tleaderRecover - Recover leader node";
 		m += "\n\tvoterRecover - Recover leader node";
 		m += "\n\tfailRecoverDemo - automatically demo node fail and recover";
-
+		m += "\n\tleaderStateFail - tests leader fail during progress";
+		m += "\n\tvoterStateFail - tests voter fail during progress";
 		writeDebug("\n" + m + "\n");
 	}
 

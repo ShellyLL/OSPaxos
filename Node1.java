@@ -1,17 +1,10 @@
 package OSPaxos;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
+import java.util.*;
 
 public class Node1 extends Node {
-   //protected Set<Node1> nodes;
-
    // Proposer Variables
    protected PriorityQueue<Proposal> promises; // sorted by sn in descending order
-   protected String value = null; // for write only
 
    // Acceptor Variables
    protected Proposal acceptedProposal;
@@ -19,134 +12,13 @@ public class Node1 extends Node {
    // Learner Variables
    protected Map<Proposal, Integer> learnedProposals;// key:proposal, value: accepted received
 
-   protected int count = 0;
-   
    public Node1(int NodeID) {
       super(NodeID);
-      //this.nodes = new HashSet<Node1>();
-      // proposer
       this.promises = null;
-
-      // acceptor
-      this.acceptedProposal = new Proposal(-1, null);// -1 refers to no
-      // proposal accepted
-      // learner
-      learnedProposals = new HashMap<Proposal, Integer>();
+      this.acceptedProposal = new Proposal(-1, null);// -1 refers to no proposal accepted
+      this.learnedProposals = new HashMap<Proposal, Integer>();
    }
 
-   /*
-   public void setCount(int n) {
-      this.count = n;
-   }
-   */
-   
-   /*
-   public void setNode1s(Set<Node1> s) {
-      this.nodes = s;
-   }
-   */
-   
-   public String getValue() {
-      return this.value;
-   }
-   
-   public void setValue(String v) {
-      this.value = v;
-   }
-   
-   // message dispatcher
-   public synchronized void receive(Message m) {
-      if (m instanceof PrepareRequestMessage && this.getIsRunning().get(0)) {
-         PrepareRequestMessage prepareRequest = (PrepareRequestMessage) m;
-         receivePrepareRequest(prepareRequest);
-      } else if (m instanceof PromiseMessage && this.getIsRunning().get(0) 
-            && this.getIsRunning().get(1)) {
-         PromiseMessage promise = (PromiseMessage) m;
-         receivePromise(promise);
-      } else if (m instanceof AcceptRequestMessage
-            && this.getIsRunning().get(0) 
-            && this.getIsRunning().get(1)
-            && this.getIsRunning().get(2)) {
-         AcceptRequestMessage acceptRequest = (AcceptRequestMessage) m;
-         receiveAcceptRequest(acceptRequest);
-      } else if (m instanceof AcceptedMessage 
-            && this.getIsRunning().get(0) 
-            && this.getIsRunning().get(1)
-            && this.getIsRunning().get(2) 
-            && this.getIsRunning().get(3)) {
-         AcceptedMessage accepted = (AcceptedMessage) m;
-         receiveAccepted(accepted);
-      } else if (m instanceof PrepareRequestMessage && !this.getIsRunning().get(0)) {
-         writeDebug("Acceptor Fail: Fail to Receive the Prepare Request and Send Promise");
-         acceptorFail();
-      } else if (m instanceof AcceptRequestMessage && !this.isRunning.get(2)) {
-         writeDebug("Acceptor Fail: Fail to Receive the Accept! Request");
-         acceptorFail();
-      } else if (m instanceof PromiseMessage && !this.isRunning.get(1)) {
-         writeDebug("Proposor Fail: Fail to Evaluate Acceptor's Promise and Send Accept!");
-         proposorFail();
-      } 
-   }
-
-   public void acceptorFail() {
-      this.nodeLocationSet.remove(this.locationData);
-      for (Node1 n : nodes) {
-         n.setNodeList(nodeLocationSet);
-      }
-   }
-   
-/*
-   public void proposorFail() {
-      System.out.println("ProposorStateFail in Node1.java");
-      
-      if (count != 0)
-         return;
-      
-      for (Node1 n : nodes) {
-         if (n.getLocationData().getNodeID() == this.getLocationData().getNodeID() + 1) {
-            n.becomeLeader();
-            n.setValue(this.getValue()); 
-            break;
-         }
-      }
-            
-      this.nodeLocationSet.remove(this.locationData);
-      for (Node1 n : nodes) {
-         n.setNodeList(nodeLocationSet);
-         n.setCount(1);
-      }
-      
-      for (Node1 n : nodes) {
-         if (n.isLeader()) {
-            n.sendPrepareRequest(n.getValue(), System.currentTimeMillis());
-            break;
-         }
-      }      
-   }
-
-   /*
-	// message dispatcher
-	public synchronized void receive(Message m) {
-		if (m instanceof PrepareRequestMessage && this.getIsRunning().get(0)) {
-			PrepareRequestMessage prepareRequest = (PrepareRequestMessage) m;
-			receivePrepareRequest(prepareRequest); // I think this is
-													// leader/proposer fail
-													// because it is leader's
-													// responsibility to send
-													// prepare request
-		} else if (m instanceof PromiseMessage && this.getIsRunning().get(1)) {
-			PromiseMessage promise = (PromiseMessage) m;
-			receivePromise(promise);
-		} else if (m instanceof AcceptRequestMessage
-				&& this.getIsRunning().get(2)) {
-			AcceptRequestMessage acceptRequest = (AcceptRequestMessage) m;
-			receiveAcceptRequest(acceptRequest);
-		} else if (m instanceof AcceptedMessage && this.getIsRunning().get(3)) {
-			AcceptedMessage accepted = (AcceptedMessage) m;
-			receiveAccepted(accepted);
-		}
-	}
-    */
    // Proposer methods
    @Override
    public void sendPrepareRequest(String v, long startTime) {
