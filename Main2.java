@@ -64,8 +64,8 @@ public class Main2 {
 			}
 		}
 	}
-	
-	private static void selectMode(int arg){
+
+	private static void selectMode(int arg) {
 		if (arg != 1 && arg != 2) {
 			writeDebug("Please type mode 1 or mode 2");
 			return;
@@ -76,14 +76,14 @@ public class Main2 {
 			createNodes(nodes.size());
 		}
 	}
-	
+
 	private static void createNodes(int n) {
 		nodes.clear();
 		nodeLocationSet.clear();
 		nodeLocationMap.clear();
 		for (int i = 0; i < n; i++) {
 			Node node;
-			if (mode == 1){
+			if (mode == 1) {
 				node = new Node1(i);
 			} else {
 				node = new Node2(i);
@@ -105,7 +105,7 @@ public class Main2 {
 		writeDebug("Proposing for reading:");
 		for (Node node : nodes) {
 			if (node.isLeader()) {
-				node.sendPrepareRequest(null, System.currentTimeMillis());// if read, just pass null for value
+				node.sendPrepareRequest(null, System.currentTimeMillis());
 				break;
 			}
 		}
@@ -232,46 +232,27 @@ public class Main2 {
 		read(nodes);
 	}
 
-   private static void proposorStateFail() {
-      for (Node n : nodes) {
-         if (n.isLeader()) {
-            n.isRunning.set(1, false);
-         }
-      }
-   }
-   
-   private static void acceptorStateFail() {
-      int random = randInt(0, 1);
-      for (Node n : nodes) {
-         if (!n.isLeader()) {
-            if (random == 0) {
-               n.isRunning.set(0, false);
-            } else 
-               n.isRunning.set(2, false);           
-            break;
-         }
-      }
-   }
-   
-	private static void stateFail() {
-		writeDebug("Random set a node failed ");
-		int randomID = randInt(0, nodes.size() - 1);
-		writeDebug("Random pick a node " + randomID + " failed");
-		Node node = null;
+	private static void proposorStateFail() {
+		writeDebug("Leader will fail in progress");
 		for (Node n : nodes) {
-			if (n.getLocationData().getNodeID() == randomID) {
-				node = n;
+			if (n.isLeader()) {
+				n.isRunning.set(1, false);
+			}
+		}
+	}
+
+	private static void acceptorStateFail() {
+		writeDebug("A voter will fail in progress");
+		int random = randInt(0, 1);
+		for (Node n : nodes) {
+			if (!n.isLeader()) {
+				if (random == 0) {
+					n.isRunning.set(0, false);
+				} else
+					n.isRunning.set(2, false);
 				break;
 			}
 		}
-
-		int randomState = randInt(0, 4);
-		writeDebug("Random pick a state " + randomState + " failed");
-		ArrayList<Boolean> isRunning = node.getIsRunning();
-		for (int i = randomState; i < 5; i++) {
-			isRunning.set(i, false);
-		}
-		node.setIsRunning(isRunning);
 	}
 
 	private static void addToSetAndMap(Node node) {

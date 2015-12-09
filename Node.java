@@ -5,7 +5,6 @@ import java.util.*;
 public abstract class Node implements Proposer, Acceptor, Learner {
 	protected Set<Node> nodes;
 	protected Set<NodeLocationData> nodeLocationSet; // store the NodeLocation of all the nodes in the group
-	// protected Map<NodeLocationData, Node> nodeLocationMap;
 	protected NodeLocationData locationData; // unique locationData to identify itself
 	protected Messenger messenger;
 	protected int currentSn; // to keep track of sn used so far
@@ -22,8 +21,6 @@ public abstract class Node implements Proposer, Acceptor, Learner {
 		this.locationData = new NodeLocationData(NodeID);
 		this.currentSn = -1;
 		this.count = 0;
-
-		// state failure, why it is 1 to 5
 		this.isRunning = new ArrayList<>();
 		for (int i = 0; i < 5; i++) {
 			this.isRunning.add(true);
