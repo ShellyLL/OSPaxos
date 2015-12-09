@@ -20,7 +20,7 @@ public class NodeTest
       
       for(int i = 0; i < 5; i++)
       {
-         Node node = new Node(i);
+         Node node = new Node1(i);
          
          if(i == 0) {// make 0 leader
             node.becomeLeader();
