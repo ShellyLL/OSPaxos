@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class Main2 {
+public class Main {
 
 	private static Set<Node> nodes;
 	private static Set<NodeLocationData> nodeLocationSet;
