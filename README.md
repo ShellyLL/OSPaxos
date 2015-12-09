@@ -1,7 +1,7 @@
-# Example Demo:
-Type 'help' for a list of commands
+# Paxos Demo:
+#Type 'help' for a list of commands
 help
-List of valid commands:
+#List of valid commands:
 	help - displays this list
 	mode <num> - choose mode 1 or mode 2 for different implementation
 	init <num> - creates <num> nodes
